@@ -25,6 +25,8 @@ Configuration
 
 3. There will be a file called 'config/search_terms.txt'.  In here put a new line delimited version of all the search terms you want to use.  These will be 'OR' terms meaning that you will search for any of these matches.
 
+4. There is a filetype extension configuraiton as well which will determine the types of files you can search for.  this is in 'config/document_filetypes.txt'
+
 Running
 ========
 
