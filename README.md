@@ -19,7 +19,7 @@ Setup
 Configuration
 ========
 
-1. You will need to have a yahoo api key to run this script using their BOSS service.  This cost 40 cents for every 1000 queries you make against them.  So it is useful and quite cost effective. To do this manually edit the file in 'config/yahoo_api.yml'. You will have to first create an application so visit https://developer.apps.yahoo.com/dashboard/createKey.html.
+1. You will need to have a yahoo api key to run this script using their BOSS service.  This cost 40 cents for every 1000 queries you make against them.  So it is useful and quite cost effective. To do this manually edit the file in 'config/yahoo_api.yml'. You will have to first create an application so visit https://developer.apps.yahoo.com/dashboard/createKey.html. I have created an example version which you can fill in after you have your application put together.  Just copy the application consumer secret and consumer token from yahoo's api.
 
 2. There will be a file with a list of sites to crawl this is called 'config/domains.txt'. Just put in the site domain newline delimited
 
