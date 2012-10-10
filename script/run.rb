@@ -1,3 +1,3 @@
-require File.expand_path(__FILE__, '../../lib/search.rb')
+require File.expand_path('./lib/search.rb')
 f = Fracking::Search.new
 f.execute!

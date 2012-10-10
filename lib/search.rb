@@ -15,6 +15,7 @@ module Fracking
       @domains = File.read(CONFIG_DIR.join('./domains.txt')).split("\n")
       @search_terms = File.read(CONFIG_DIR.join('./search_terms.txt')).split("\n")
       @yahoo_api = YAML::load_file(CONFIG_DIR.join('./yahoo_api.yml'))
+      @search_type = "limitedweb"
     end
     
     def connection
@@ -30,43 +31,52 @@ module Fracking
       end
     end
     
+    def request_and_save(filetype, term_search, site, start)
+      response = connection.get(@search_type, :type => filetype, :q => "#{term_search}+site:#{site}", :start => start)
+      save_response(response, 'filetype' => filetype, 'site' => site, 'term' => term_search)
+    end
     
-    def request(filetype, site, terms)
-      term_search = terms.map {|t| "\"#{term}\"" }.join(' ')
-      
-      response = connection.get("web", :q => "filetype:#{filetype} site:#{site} #{term_search}")
-      
-      next_page_start = save_response(response)
-      
-      until next_page_start.nil?
-        response = connection.get("web", :q => "filetype:#{filetype} site:#{site} \"#{term}\"", :start => next_page_start)
-        next_page_start = save_response(response)
-      end
+    def request(filetype, site, term)
+      #term_search = terms.map {|term| term.split(/\s+/).join('|') }.join('+')
+      term_search = term.gsub(/\s+/, '+')
+      start = 0
+      begin
+        start = request_and_save(filetype, term_search, site, start)
+      end until start.nil?
     end
     
     def execute!
       @document_types.each do |type|
         @domains.each do |domain|
-          request(type, domain, @search_terms)
+          @search_terms.each do |term|
+            request(type, domain, term)
+          end
         end
       end
     end
     
     # returns the next page to go to or nil if no more pages to go to
-    def save_response(response)
-      web_response = response.body.fetch('bossresponse').fetch('web')
+    def save_response(response, options)
+      web_response = response.body.fetch('bossresponse').fetch(@search_type)
       total = web_response['totalresults'].to_i
       last_count = web_response['start'].to_i + web_response['count'].to_i
       
+      output = OUTPUT_PATH.join("./docs.csv")
+      if !File.exists?(output)
+        File.open(output, "w") {|f| f.write("date,url,title,abstract,filetype,site,terms\n") }
+      end
       # headers are "date,url,title,abstract"
       
-      CSV.open(OUTPUT_PATH.join("./docs.csv"), "a") do |csv|
-        web_response['results'].each do |entry|
+      CSV.open(output, "a") do |csv|
+        Array(web_response['results']).each do |entry|
           csv << [
             entry['date'],
             entry['url'],
             entry['title'],
-            entry['abstract']
+            entry['abstract'],
+            options['filetype'],
+            options['site'],
+            options['term']
           ]
         end
       end
@@ -76,8 +86,8 @@ module Fracking
       else
         last_count + 1
       end
-    rescue Exception => e
-      puts e.message
+    #rescue Exception => e
+    #  puts e.message
     end
     
 
