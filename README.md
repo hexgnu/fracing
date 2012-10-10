@@ -19,13 +19,13 @@ Setup
 Configuration
 ========
 
-1. You will need to have a yahoo api key to run this script using their BOSS service.  This cost 80 cents for every 1000 queries you make against them.  So it is useful and quite cost effective. To do this manually edit the file in 'config/yahoo_api.yml'
+1. You will need to have a yahoo api key to run this script using their BOSS service.  This cost 40 cents for every 1000 queries you make against them.  So it is useful and quite cost effective. To do this manually edit the file in 'config/yahoo_api.yml'. You will have to first create an application so visit https://developer.apps.yahoo.com/dashboard/createKey.html.
 
 2. There will be a file with a list of sites to crawl this is called 'config/domains.txt'. Just put in the site domain newline delimited
 
 3. There will be a file called 'config/search_terms.txt'.  In here put a new line delimited version of all the search terms you want to use.  These will be 'OR' terms meaning that you will search for any of these matches.
 
-4. There is a filetype extension configuraiton as well which will determine the types of files you can search for.  this is in 'config/document_filetypes.txt'
+4. There is a filetype extension configuraiton as well which will determine the types of files you can search for.  this is in 'config/document_filetypes.txt'.  According to the yahoo documentation you have a few filetypes that are of importance. (http://developer.yahoo.com/boss/search/boss_api_guide/webv2_service.html#web_optional_argsv2) has a lot of information but I have selected nonhtml as the default. This will give you xl files, docs, pdfs, and text files.
 
 Running
 ========
