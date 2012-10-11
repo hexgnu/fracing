@@ -112,6 +112,8 @@ module Fracking
           if @urls_already_hit.include?(entry['url'])
             puts "Skipping url #{entry['url']}"
             next
+          else
+            @urls_already_hit << entry['url']
           end
           csv << [
             entry['date'],
