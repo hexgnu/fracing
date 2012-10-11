@@ -8,8 +8,8 @@ require 'open-uri'
 
 module Fracking
   class Search
-    CONFIG_DIR = Pathname.new(File.join(File.dirname(__FILE__), '../config'))
-    OUTPUT_PATH = Pathname.new(File.join(File.dirname(__FILE__), '../output'))
+    CONFIG_DIR = Pathname.new(File.expand_path(File.join(File.dirname(__FILE__), '../config')))
+    OUTPUT_PATH = Pathname.new(File.expand_path(File.join(File.dirname(__FILE__), '../output')))
     
     def initialize
       if !File.exists?(OUTPUT_PATH)
@@ -51,7 +51,7 @@ module Fracking
     end
     
     def execute!
-      output_path = OUTPUT_PATH.join("./docs.csv")
+      output_path = File.expand_path(OUTPUT_PATH.join("docs.csv"))
       @urls_already_hit = []
       CSV.foreach(output_path, :headers => true) do |row|
         @urls_already_hit << row['url']
@@ -101,7 +101,7 @@ module Fracking
       total = web_response['totalresults'].to_i
       last_count = web_response['start'].to_i + web_response['count'].to_i
       
-      output = OUTPUT_PATH.join("./docs.csv")
+      output = File.expand_path(OUTPUT_PATH.join("./docs.csv"))
       if !File.exists?(output)
         File.open(output, "w") {|f| f.write("date,url,title,abstract,filetype,site,terms\n") }
       end
