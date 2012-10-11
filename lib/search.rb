@@ -4,6 +4,7 @@ require 'pathname'
 require 'yaml'
 require 'simple_oauth'
 require 'csv'
+require 'open-uri'
 
 module Fracking
   class Search
@@ -11,6 +12,9 @@ module Fracking
     OUTPUT_PATH = Pathname.new(File.join(File.dirname(__FILE__), '../output'))
     
     def initialize
+      if !File.exists?(OUTPUT_PATH)
+        Dir.mkdir(OUTPUT_PATH)
+      end
       @document_types = File.read(CONFIG_DIR.join('./document_filetypes.txt')).split("\n")
       @domains = File.read(CONFIG_DIR.join('./domains.txt')).split("\n")
       @search_terms = File.read(CONFIG_DIR.join('./search_terms.txt')).split("\n")
@@ -32,6 +36,7 @@ module Fracking
     end
     
     def request_and_save(filetype, term_search, site, start)
+      puts "Searching for #{term_search} on #{site} starting_at #{start}"
       response = connection.get(@search_type, :type => filetype, :q => "#{term_search}+site:#{site}", :start => start)
       save_response(response, 'filetype' => filetype, 'site' => site, 'term' => term_search)
     end
@@ -46,13 +51,43 @@ module Fracking
     end
     
     def execute!
-      @document_types.each do |type|
-        @domains.each do |domain|
-          @search_terms.each do |term|
-            request(type, domain, term)
+      if !File.exists?(OUTPUT_PATH.join("./docs.csv"))
+        @document_types.each do |type|
+          @domains.each do |domain|
+            @search_terms.each do |term|
+              request(type, domain, term)
+            end
           end
         end
       end
+      
+      thread_pool = []
+      CSV.foreach(OUTPUT_PATH.join("./docs.csv"), :headers => true) do |row|
+        until thread_pool.select(&:alive?).length <= 4
+          sleep 0.01
+        end
+        thread_pool << Thread.new(row) do |local_row|
+          save_row(local_row)
+        end
+      end
+      thread_pool.each {|thr| thr.join }
+    end
+    
+    def save_row(row)
+      directory = OUTPUT_PATH.join("./#{row['site']}")
+      if !File.exists?(directory)
+        Dir.mkdir(directory)
+      end
+      output_path = directory.join(File.basename(row['url']))
+      return if File.exists?(output_path)
+      File.open(output_path, 'wb') do |f|
+        open(row['url']) do |remote_file|
+          f.write(remote_file.read)
+        end
+      end
+      puts "SUCCESS: Downloaded #{row['url']}"
+    rescue Exception => e
+      puts e.message
     end
     
     # returns the next page to go to or nil if no more pages to go to
@@ -86,8 +121,6 @@ module Fracking
       else
         last_count + 1
       end
-    #rescue Exception => e
-    #  puts e.message
     end
     
 
