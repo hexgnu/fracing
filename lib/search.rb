@@ -15,9 +15,16 @@ module Fracking
       if !File.exists?(OUTPUT_PATH)
         Dir.mkdir(OUTPUT_PATH)
       end
-      @document_types = File.read(CONFIG_DIR.join('./document_filetypes.txt')).split("\n")
-      @domains = File.read(CONFIG_DIR.join('./domains.txt')).split("\n")
-      @search_terms = File.read(CONFIG_DIR.join('./search_terms.txt')).split("\n")
+      
+      parse = lambda {|text| text.split("\n").select {|line| line !~ /^\s*$/}.map(&:strip)}
+      
+      
+      @document_types = parse.call(File.read(CONFIG_DIR.join('./document_filetypes.txt')))
+      @domains = parse.call(File.read(CONFIG_DIR.join('./domains.txt')))
+      
+      @domains = @domains.map {|domain| domain.gsub(/^http(s)?:\/\//,'')}
+      
+      @search_terms = parse.call(File.read(CONFIG_DIR.join('./search_terms.txt')))
       @yahoo_api = YAML::load_file(CONFIG_DIR.join('./yahoo_api.yml'))
       @search_type = "limitedweb"
     end
