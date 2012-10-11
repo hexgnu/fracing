@@ -52,9 +52,13 @@ module Fracking
     
     def execute!
       output_path = File.expand_path(OUTPUT_PATH.join("docs.csv"))
+      
       @urls_already_hit = []
-      CSV.foreach(output_path, :headers => true) do |row|
-        @urls_already_hit << row['url']
+      
+      if File.exists?(output_path)
+        CSV.foreach(output_path, :headers => true) do |row|
+          @urls_already_hit << row['url']
+        end
       end
       @urls_already_hit = @urls_already_hit.uniq
       
