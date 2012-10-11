@@ -51,12 +51,17 @@ module Fracking
     end
     
     def execute!
-      if !File.exists?(OUTPUT_PATH.join("./docs.csv"))
-        @document_types.each do |type|
-          @domains.each do |domain|
-            @search_terms.each do |term|
-              request(type, domain, term)
-            end
+      output_path = OUTPUT_PATH.join("./docs.csv")
+      @urls_already_hit = []
+      CSV.foreach(output_path, :headers => true) do |row|
+        @urls_already_hit << row['url']
+      end
+      @urls_already_hit = @urls_already_hit.uniq
+      
+      @document_types.each do |type|
+        @domains.each do |domain|
+          @search_terms.each do |term|
+            request(type, domain, term)
           end
         end
       end
@@ -104,6 +109,10 @@ module Fracking
       
       CSV.open(output, "a") do |csv|
         Array(web_response['results']).each do |entry|
+          if @urls_already_hit.include?(entry['url'])
+            puts "Skipping url #{entry['url']}"
+            next
+          end
           csv << [
             entry['date'],
             entry['url'],
