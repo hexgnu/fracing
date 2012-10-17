@@ -111,6 +111,7 @@ module Fracking
       web_response = response.body.fetch('bossresponse').fetch(@search_type)
       total = web_response['totalresults'].to_i
       last_count = web_response['start'].to_i + web_response['count'].to_i
+      return if web_response['count'].to_i == 0
       
       output = File.expand_path(OUTPUT_PATH.join("./docs.csv"))
       if !File.exists?(output)
