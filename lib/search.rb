@@ -5,6 +5,7 @@ require 'yaml'
 require 'simple_oauth'
 require 'csv'
 require 'open-uri'
+require 'nokogiri'
 
 module Fracking
   class Search
@@ -67,6 +68,7 @@ module Fracking
           @urls_already_hit << row['url']
         end
       end
+      
       @urls_already_hit = @urls_already_hit.uniq
       
       @document_types.each do |type|
@@ -77,6 +79,10 @@ module Fracking
         end
       end
       
+      save_files!
+    end
+    
+    def save_files!
       thread_pool = []
       CSV.foreach(OUTPUT_PATH.join("./docs.csv"), :headers => true) do |row|
         until thread_pool.select(&:alive?).length <= 4
@@ -91,16 +97,29 @@ module Fracking
     
     def save_row(row)
       directory = OUTPUT_PATH.join("./#{row['site']}")
+      html_directory = directory.join("./html")
       if !File.exists?(directory)
         Dir.mkdir(directory)
+        Dir.mkdir(html_directory)
       end
-      output_path = directory.join(File.basename(row['url']))
+      
+      
+      html = ['', '.html', '.htm'].include?(File.extname(row['url']).downcase)
+
+      if html
+        output_path = html_directory.join(File.basename(row['url'], File.extname(row['url'])) + '.html')
+      else
+        output_path = directory.join(File.basename(row['url']))
+      end
+      
       return if File.exists?(output_path)
+      
       File.open(output_path, 'wb') do |f|
         open(row['url']) do |remote_file|
           f.write(remote_file.read)
         end
       end
+      
       puts "SUCCESS: Downloaded #{row['url']}"
     rescue Exception => e
       puts e.message
@@ -115,27 +134,54 @@ module Fracking
       
       output = File.expand_path(OUTPUT_PATH.join("./docs.csv"))
       if !File.exists?(output)
-        File.open(output, "w") {|f| f.write("date,url,title,abstract,filetype,site,terms\n") }
+        File.open(output, "w") {|f| f.write("date,url,title,abstract,filetype,site,terms,linking_page\n") }
       end
       # headers are "date,url,title,abstract"
-      
       CSV.open(output, "a") do |csv|
         Array(web_response['results']).each do |entry|
-          if @urls_already_hit.include?(entry['url'])
-            puts "Skipping url #{entry['url']}"
-            next
+          if options['filetype'] == 'html'
+            doc = Nokogiri::HTML.parse(open(entry['url']))
+            tags = doc.xpath("//a").select {|a| a.attr('href') =~ /\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/}
+            tags.each do |t|
+              uri = URI.parse(URI.escape(t.attr('href')))
+              uri.host = URI.parse(entry['url']).host if uri.host.nil?
+              uri.scheme = URI.parse(entry['url']).scheme if uri.scheme.nil?
+              
+              next if @urls_already_hit.include?(uri.to_s)
+              
+              @urls_already_hit << uri.to_s
+              csv << [
+                entry['date'],
+                uri.to_s,
+                t.inner_text,
+                t.attr('title'),
+                options['filetype'],
+                options['site'],
+                options['term'],
+                entry['url']
+              ]
+
+            end
           else
-            @urls_already_hit << entry['url']
+            if @urls_already_hit.include?(entry['url'])
+              puts "Skipping url #{entry['url']}"
+              next
+            else
+              @urls_already_hit << entry['url']
+            end
+            
+            
+            csv << [
+              entry['date'],
+              entry['url'],
+              entry['title'],
+              entry['abstract'],
+              options['filetype'],
+              options['site'],
+              options['term'],
+              ''
+            ]
           end
-          csv << [
-            entry['date'],
-            entry['url'],
-            entry['title'],
-            entry['abstract'],
-            options['filetype'],
-            options['site'],
-            options['term']
-          ]
         end
       end
       

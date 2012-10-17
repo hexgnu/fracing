@@ -10,6 +10,7 @@ GEM
       faraday (>= 0.7.4, < 0.9)
     multi_xml (0.5.1)
     multipart-post (1.1.5)
+    nokogiri (1.5.5)
     simple_oauth (0.1.9)
 
 PLATFORMS
@@ -20,4 +21,5 @@ DEPENDENCIES
   faraday
   faraday_middleware
   multi_xml
+  nokogiri
   simple_oauth
